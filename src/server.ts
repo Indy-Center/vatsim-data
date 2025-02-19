@@ -1,44 +1,63 @@
-import express from "express";
-import { db } from "./db";
-import dataRoutes from "./routes/data";
-import pilotsRoutes from "./routes/pilots";
+import axios from "axios";
+import { config } from "./config";
 import logger from "./logger";
+import * as zmq from "zeromq";
 
-const app = express();
-
-app.use(express.json());
-
-app.get("/", (req, res) => {
-  res.json({
-    version: process.env.BUILD_NUMBER || "development",
-    paths: {
-      data: "/v1/data",
-      pilots: "/v1/pilots",
-    },
-  });
+process.on("SIGINT", () => {
+  logger.info("SIGINT received, shutting down...");
+  process.exit(0);
 });
 
-// Routes
-app.use("/v1/data", dataRoutes);
-app.use("/v1/pilots", pilotsRoutes);
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM received, shutting down...");
+  process.exit(0);
+});
 
 async function main() {
-  try {
-    logger.info("Running database migrations...");
-    await db.migrate.latest();
-    logger.info("Database migrations completed");
+  logger.info("Starting VATSIM Data Ingestor");
 
-    app.listen(3000, () => {
-      logger.info("Server is running on port 3000");
-    });
-  } catch (error: any) {
-    logger.error("Failed to start server", {
-      error: error.message,
-      stack: error.stack,
-      code: error.code,
-      details: error.response?.data,
-    });
-    process.exit(1);
+  // Create ZMQ Socket for Broadcasting
+  const sock = new zmq.Publisher();
+  await sock.bind(`tcp://${config.ZMQ_HOST}:${config.ZMQ_PORT}`);
+
+  // Initial Fetch when Application Starts
+  await ingestAndBroadcast(sock);
+
+  // Fetch VATSIM Data on config.REFRESH_INTERVAL_MS and publish.
+  logger.info(`Fetching VATSIM Data every ${config.REFRESH_INTERVAL_MS}ms`);
+  setInterval(async () => {
+    await ingestAndBroadcast(sock);
+  }, config.REFRESH_INTERVAL_MS);
+}
+
+async function ingestAndBroadcast(sock: zmq.Publisher) {
+  const message = await ingest();
+
+  if (message) {
+    await sock.send(JSON.stringify(message));
+  }
+}
+
+async function ingest() {
+  try {
+    logger.debug("Fetching VATSIM Data");
+    const response = await axios.get(config.VATSIM_DATA_URL);
+
+    let message = {
+      timestamp: new Date().toISOString(),
+      data: response.data,
+    };
+
+    logger.silly(`Data: ${JSON.stringify(message.data)}`);
+
+    logger.debug(
+      `Broadcasting VATSIM Data: ${message.data.controllers.length} controllers, ${message.data.pilots.length} pilots, ${message.data.servers.length} servers, ${message.data.atis.length} atis, ${message.data.prefiles.length} pre-files.`
+    );
+
+    return message;
+  } catch (error) {
+    logger.error(`Error ingesting VATSIM Data: ${error}`);
+    return null;
   }
 }
 

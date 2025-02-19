@@ -1,3 +1,3 @@
-# VATSIM Data Project
+# VATSIM Data Ingestor
 
-This project provides caching and API access to various VATSIM data sources.
+This project retrieves data from the VATSIM Data Feed and broadcasts it via [ZeroMQ](https://zeromq.org/).

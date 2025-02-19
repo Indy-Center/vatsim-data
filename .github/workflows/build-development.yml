@@ -7,8 +7,7 @@ on:
       - main
 env:
   REGISTRY: ghcr.io
-  API_IMAGE_NAME: ${{ github.repository }}-api
-  INGEST_IMAGE_NAME: ${{ github.repository }}-ingest
+  BUILD_IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
@@ -36,41 +35,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract API metadata
-        id: meta_api
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ steps.build_number.outputs.build_number }}-next
-            type=raw,value=latest
-            type=raw,value=${{ github.sha }}
-
       - name: Extract Ingest metadata
-        id: meta_ingest
+        id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ${{ env.REGISTRY }}/${{ env.INGEST_IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.BUILD_IMAGE_NAME }}
           tags: |
             type=raw,value=${{ steps.build_number.outputs.build_number }}-next
             type=raw,value=latest
             type=raw,value=${{ github.sha }}
-
-      - name: Build and push API Docker image
-        id: push_api
-        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-        with:
-          context: .
-          target: api
-          build-args: |
-            BUILD_NUMBER=${{ steps.build_number.outputs.build_number }}-next
-            GITHUB_REPOSITORY=${{ github.repository }}
-          push: true
-          tags: ${{ steps.meta_api.outputs.tags }}
-          labels: ${{ steps.meta_api.outputs.labels }}
 
       - name: Build and push Ingest Docker image
-        id: push_ingest
+        id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: .
@@ -79,19 +55,12 @@ jobs:
             BUILD_NUMBER=${{ steps.build_number.outputs.build_number }}-next
             GITHUB_REPOSITORY=${{ github.repository }}
           push: true
-          tags: ${{ steps.meta_ingest.outputs.tags }}
-          labels: ${{ steps.meta_ingest.outputs.labels }}
-
-      - name: Generate API artifact attestation
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME}}
-          subject-digest: ${{ steps.push_api.outputs.digest }}
-          push-to-registry: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Generate Ingest artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.INGEST_IMAGE_NAME}}
-          subject-digest: ${{ steps.push_ingest.outputs.digest }}
+          subject-name: ${{ env.REGISTRY }}/${{ env.BUILD_IMAGE_NAME}}
+          subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
