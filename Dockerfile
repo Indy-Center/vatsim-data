@@ -15,7 +15,7 @@ WORKDIR /app
 COPY . .
 
 # Install dependencies
-RUN npm ci
+RUN npm install --omit=dev
 
 # Set environment variables
 ENV NODE_ENV=production

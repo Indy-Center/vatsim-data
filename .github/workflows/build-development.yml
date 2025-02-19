@@ -50,7 +50,6 @@ jobs:
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: .
-          target: ingest
           build-args: |
             BUILD_NUMBER=${{ steps.build_number.outputs.build_number }}-next
             GITHUB_REPOSITORY=${{ github.repository }}
