@@ -6,13 +6,18 @@
     "process": "ts-node src/scripts/processVatsimData.ts",
     "seed:airports": "ts-node src/scripts/seedAirports.ts",
     "start": "ts-node",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.4",
     "@types/rascal": "^10.2.0",
-    "nodemon": "^3.1.9"
+    "@vitest/coverage-v8": "^3.0.8",
+    "nodemon": "^3.1.9",
+    "vitest": "^3.0.8"
   },
   "dependencies": {
     "axios": "^1.7.9",
