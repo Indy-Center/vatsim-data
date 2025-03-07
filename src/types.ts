@@ -39,13 +39,14 @@ export type VatsimController = {
   rating: number;
   server: string;
   visual_range: number;
-  atis_code: string;
   text_atis: string[];
   last_updated: string;
   logon_time: string;
 };
 
-export type VatsimAtis = VatsimController;
+export type VatsimAtis = VatsimController & {
+  atis_code: string;
+};
 
 export type VatsimServer = {
   ident: string;

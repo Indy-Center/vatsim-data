@@ -47,7 +47,6 @@ const TEST_FIXTURES = {
         rating: 3,
         server: "TEST_SERVER",
         visual_range: 150,
-        atis_code: "A",
         text_atis: ["Test ATIS"],
         last_updated: "2024-03-07T23:15:00Z",
         logon_time: "2024-03-07T22:00:00Z",
